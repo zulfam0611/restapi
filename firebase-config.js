@@ -7,7 +7,7 @@ const admin = require('firebase-admin');
 let serviceAccount;
 
 try {
-  const base64 = process.env.SERVICE_ACCOUNT_BASE64;
+  const base64 = process.env.SERVICE_ACCOUNT;
 
   if (!base64) {
     throw new Error('SERVICE_ACCOUNT tidak ditemukan di .env');
