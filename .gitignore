@@ -1,0 +1,11 @@
+
+.env
+
+
+*.json
+
+
+node_modules/
+
+
+uploads/
