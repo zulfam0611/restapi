@@ -10,7 +10,7 @@ try {
   const base64 = process.env.SERVICE_ACCOUNT_BASE64;
 
   if (!base64) {
-    throw new Error('SERVICE_ACCOUNT_BASE64 tidak ditemukan di .env');
+    throw new Error('SERVICE_ACCOUNT tidak ditemukan di .env');
   }
 
   const jsonString = Buffer.from(base64, 'base64').toString('utf8');
