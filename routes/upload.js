@@ -13,10 +13,10 @@ const upload = multer({ dest: '/tmp' });
 let credentials;
 
 try {
-  const base64 = process.env.GOOGLE_CREDENTIALS_BASE64;
+  const base64 = process.env.GOOGLE_CREDENTIALS;
 
   if (!base64) {
-    throw new Error('GOOGLE_CREDENTIALS_BASE64 tidak ditemukan di .env');
+    throw new Error('GOOGLE_CREDENTIALS tidak ditemukan di .env');
   }
 
   const jsonString = Buffer.from(base64, 'base64').toString('utf8');
