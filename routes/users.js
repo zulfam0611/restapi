@@ -1,8 +1,8 @@
 const express = require('express');
-const admin = require('../firebase-config'); // Ambil dari firebase-config.js
+const { admin, db } = require('../firebase-config'); // Ambil dari firebase-config.js
 const router = express.Router();
 
-const db = admin.firestore();
+//const db = admin.firestore();
 
 router.get('/', async (req, res) => {
   const { rt, role } = req.query;
