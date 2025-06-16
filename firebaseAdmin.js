@@ -1,24 +1,27 @@
 // firebase-config.js
 
-require('dotenv').config(); // Harus di awal
+require('dotenv').config(); // Wajib di paling atas
 
 const admin = require('firebase-admin');
 
 let serviceAccount;
 
 try {
-  // Ambil dan parse JSON dari environment variable
-  serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT);
+  const base64 = process.env.SERVICE_ACCOUNT_BASE64;
 
-  // Format private key agar newline-nya benar
-  if (serviceAccount.private_key) {
-    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+  if (!base64) {
+    throw new Error('SERVICE_ACCOUNT_BASE64 tidak ditemukan di .env');
   }
+
+  // Decode base64 → string JSON → objek JS
+  const jsonString = Buffer.from(base64, 'base64').toString('utf8');
+  serviceAccount = JSON.parse(jsonString);
 } catch (error) {
-  console.error('❌ Gagal memuat SERVICE_ACCOUNT dari .env:', error);
-  process.exit(1); // Hentikan proses jika JSON tidak valid
+  console.error('❌ Gagal memuat SERVICE_ACCOUNT_BASE64 dari .env:', error.message);
+  process.exit(1); // Hentikan aplikasi agar tidak jalan dengan kredensial rusak
 }
 
+// Inisialisasi Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });

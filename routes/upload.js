@@ -3,13 +3,28 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
-require('dotenv').config(); // Load .env
+require('dotenv').config(); // Harus di awal
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
 
-// Ambil credentials dari ENV
-const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+// Gunakan folder sementara agar aman di Railway/Vercel
+const upload = multer({ dest: '/tmp' });
+
+let credentials;
+
+try {
+  const base64 = process.env.GOOGLE_CREDENTIALS_BASE64;
+
+  if (!base64) {
+    throw new Error('GOOGLE_CREDENTIALS_BASE64 tidak ditemukan di .env');
+  }
+
+  const jsonString = Buffer.from(base64, 'base64').toString('utf8');
+  credentials = JSON.parse(jsonString);
+} catch (error) {
+  console.error('❌ Gagal memuat GOOGLE_CREDENTIALS_BASE64 dari .env:', error.message);
+  process.exit(1);
+}
 
 const driveAuth = new google.auth.GoogleAuth({
   credentials,
@@ -31,7 +46,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     const fileMetadata = {
       name: req.file.originalname,
-      parents: ['1RgaJv33l2o1fu3H9YKTpBmVSAA_5cyyK'], // Sesuaikan
+      parents: ['1RgaJv33l2o1fu3H9YKTpBmVSAA_5cyyK'], // Ganti dengan folder ID kamu
     };
 
     const media = {
@@ -60,7 +75,7 @@ router.post('/', upload.single('image'), async (req, res) => {
       fields: 'webViewLink, webContentLink',
     });
 
-    fs.unlinkSync(req.file.path); // Hapus file lokal
+    fs.unlinkSync(req.file.path); // Hapus file sementara
 
     res.status(200).json({
       message: 'Upload berhasil',
@@ -68,7 +83,10 @@ router.post('/', upload.single('image'), async (req, res) => {
     });
   } catch (error) {
     console.error('Upload gagal:', error);
-    res.status(500).json({ error: 'Terjadi kesalahan saat upload.' });
+    res.status(500).json({
+      error: 'Terjadi kesalahan saat upload.',
+      detail: error.message,
+    });
   }
 });
 
