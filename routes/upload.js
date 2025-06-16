@@ -22,7 +22,7 @@ try {
   const jsonString = Buffer.from(base64, 'base64').toString('utf8');
   credentials = JSON.parse(jsonString);
 } catch (error) {
-  console.error('❌ Gagal memuat GOOGLE_CREDENTIALS_BASE64 dari .env:', error.message);
+  console.error('❌ Gagal memuat GOOGLE_CREDENTIALS dari .env:', error.message);
   process.exit(1);
 }
 

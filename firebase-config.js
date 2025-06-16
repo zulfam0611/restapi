@@ -17,7 +17,7 @@ try {
   const jsonString = Buffer.from(base64, 'base64').toString('utf8');
   serviceAccount = JSON.parse(jsonString);
 } catch (error) {
-  console.error('❌ Gagal memuat SERVICE_ACCOUNT_BASE64 dari .env:', error.message);
+  console.error('❌ Gagal memuat SERVICE_ACCOUNT dari .env:', error.message);
   process.exit(1);
 }
 
