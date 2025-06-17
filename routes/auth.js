@@ -1,5 +1,5 @@
 const express = require('express');
-const { admin } = require('../firebase-config');
+const { admin } = require('../firebase-config'); // pastikan sudah export { admin, db }
 const router = express.Router();
 
 router.post('/login', async (req, res) => {
@@ -10,10 +10,14 @@ router.post('/login', async (req, res) => {
   }
 
   try {
+    // Verifikasi ID Token Firebase
     const decodedToken = await admin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
+
+    // Ambil data user lengkap dari Firebase
     const userRecord = await admin.auth().getUser(uid);
 
+    // Cek custom claim role 'admin'
     if (userRecord.customClaims && userRecord.customClaims.role === 'admin') {
       return res.status(200).json({ role: 'admin' });
     } else {
@@ -21,7 +25,8 @@ router.post('/login', async (req, res) => {
     }
   } catch (error) {
     console.error('Error verifying token:', error);
-    return res.status(401).json({ message: 'Token tidak valid' });
+    // Kirim pesan error detail agar mudah debugging (bisa kamu sembunyikan di production)
+    return res.status(401).json({ message: 'Token tidak valid', error: error.message });
   }
 });
 
