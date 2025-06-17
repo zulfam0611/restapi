@@ -29,5 +29,6 @@ app.get('/image/:fileId', (req, res) => {
 // Start server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`🚀 Server berjalan di http://localhost:${port}`);
+  console.log(`🚀 Server jalan di port ${port}`);
 });
+
