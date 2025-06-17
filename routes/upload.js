@@ -5,20 +5,15 @@ const { google } = require('googleapis');
 require('dotenv').config();
 
 const router = express.Router();
-const upload = multer({ dest: '/tmp' }); // Railway hanya izinkan tulis ke /tmp
+const upload = multer({ dest: '/tmp' }); // /tmp aman untuk Railway/Vercel
 
-// Load Google credentials dari .env
-let credentials;
+// 🔐 Ambil & decode kredensial dari .env (base64)
+const base64 = process.env.GOOGLE_CREDENTIALS;
+const jsonString = Buffer.from(base64, 'base64').toString('utf8');
+const credentials = JSON.parse(jsonString);
+credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
 
-try {
-  const jsonString = Buffer.from(process.env.GOOGLE_CREDENTIALS, 'base64').toString('utf8');
-  credentials = JSON.parse(jsonString);
-} catch (err) {
-  console.error('❌ Gagal memuat GOOGLE_CREDENTIALS dari .env:', err.message);
-  process.exit(1);
-}
-
-// Setup Google Drive Auth
+// 🔐 Setup autentikasi Google Drive
 const auth = new google.auth.GoogleAuth({
   credentials,
   scopes: ['https://www.googleapis.com/auth/drive'],
@@ -26,57 +21,52 @@ const auth = new google.auth.GoogleAuth({
 
 const drive = google.drive({ version: 'v3', auth });
 
-// Endpoint upload file ke Google Drive
-router.post('/upload', upload.single('file'), async (req, res) => {
+// 📤 Endpoint POST /api/upload
+router.post('/', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'Tidak ada file yang diunggah.' });
+      return res.status(400).json({ error: 'Tidak ada file yang dikirim.' });
     }
 
-    const fileMetadata = {
-      name: req.file.originalname,
-    };
-
+    const fileMetadata = { name: req.file.originalname };
     const media = {
       mimeType: req.file.mimetype,
       body: fs.createReadStream(req.file.path),
     };
 
-    // Upload file ke Google Drive
-    const response = await drive.files.create({
+    // Upload ke Google Drive
+    const uploadRes = await drive.files.create({
       resource: fileMetadata,
       media,
       fields: 'id',
     });
 
-    const fileId = response.data.id;
+    const fileId = uploadRes.data.id;
 
-    // Set permission agar file bisa diakses publik
+    // Ubah jadi publik
     await drive.permissions.create({
       fileId,
-      requestBody: {
-        role: 'reader',
-        type: 'anyone',
-      },
+      requestBody: { role: 'reader', type: 'anyone' },
     });
 
-    // Dapatkan link file
-    const result = await drive.files.get({
+    // Ambil link view dan download
+    const file = await drive.files.get({
       fileId,
       fields: 'webViewLink, webContentLink',
     });
 
-    // Hapus file lokal setelah upload
+    // Hapus file lokal
     fs.unlinkSync(req.file.path);
 
     res.status(200).json({
       message: 'Upload berhasil',
-      imageUrl: result.data.webContentLink,
-      viewLink: result.data.webViewLink,
+      imageUrl: file.data.webContentLink,
+      viewLink: file.data.webViewLink,
     });
   } catch (error) {
-    console.error('❌ Upload gagal:', error);
-    res.status(500).json({ error: 'Terjadi kesalahan saat upload.' });
+    console.error('❌ Upload gagal:', error.message);
+    console.error(error.response?.data || error);
+    res.status(500).json({ error: 'Upload gagal: ' + error.message });
   }
 });
 
