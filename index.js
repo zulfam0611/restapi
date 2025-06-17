@@ -27,8 +27,12 @@ app.get('/image/:fileId', (req, res) => {
 });
 
 // Start server
-const port = process.env.PORT || 3000;
+if (!process.env.PORT) {
+  throw new Error('❌ Railway PORT not set! Cannot start server.');
+}
+const port = process.env.PORT;
 app.listen(port, () => {
   console.log(`🚀 Server jalan di port ${port}`);
 });
+
 
