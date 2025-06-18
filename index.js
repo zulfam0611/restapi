@@ -17,7 +17,7 @@ const usersRoutes = require('./routes/users');
 // 🧩 Mount route dengan path konsisten
 app.use('/api/upload', uploadRoutes); // ✅ Ini akan aktif di: POST /api/upload
 app.use('/api/auth', authRoutes);
-app.use('/users', usersRoutes);
+app.use('/api/users', usersRoutes);
 
 // 🔁 Redirect untuk image dari Google Drive jika pakai fileId
 app.get('/image/:fileId', (req, res) => {
