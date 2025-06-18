@@ -1,8 +1,10 @@
 const express = require('express');
-const { admin, db } = require('../firebase-config'); // Ambil dari firebase-config.js
+const { admin, db } = require('../firebase-config');
 const router = express.Router();
 
-// GET data pengguna dengan filter rt dan role
+// ============================
+// GET: Ambil data pengguna
+// ============================
 router.get('/', async (req, res) => {
   const { rt, role } = req.query;
 
@@ -34,7 +36,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-// DELETE pengguna berdasarkan ID dokumen Firestore
+// ============================
+// DELETE: Hapus pengguna
+// ============================
 router.delete('/:id', async (req, res) => {
   const userId = req.params.id;
   try {
@@ -46,39 +50,74 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST tambah pengguna baru + kirim email reset password
+// ============================
+// POST: Tambah pengguna baru
+// ============================
 router.post('/add', async (req, res) => {
   const { nama, email, password, rt, role } = req.body;
 
   try {
-    // 1. Buat akun di Firebase Authentication
-    const userRecord = await admin.auth().createUser({
-      email,
-      password,
-      displayName: nama,
-    });
-
-    // 2. Set custom claims untuk role
-    await admin.auth().setCustomUserClaims(userRecord.uid, { role });
-
-    // 3. Simpan ke Firestore
-    await db.collection('users').doc(userRecord.uid).set({
-      nama,
-      email,
-      rt,
-      role,
-      uid: userRecord.uid,
-    });
-
-    // 4. Kirim email reset password otomatis via Firebase
-    await admin.auth().generatePasswordResetLink(email);
-
-    res.status(200).json({
-      message: 'Pengguna berhasil ditambahkan dan email reset password telah dikirim.',
+    // 1. Cek apakah email sudah digunakan
+    const existingUser = await admin.auth().getUserByEmail(email);
+    
+    // Kalau berhasil menemukan user, berarti email sudah terdaftar
+    return res.status(400).json({
+      error: 'Email sudah digunakan oleh akun lain.',
     });
   } catch (error) {
-    console.error('Gagal menambahkan pengguna:', error);
-    res.status(500).json({ error: 'Gagal menambahkan pengguna' });
+    if (error.code === 'auth/user-not-found') {
+      // Lanjut buat user baru
+      try {
+        const userRecord = await admin.auth().createUser({
+          email,
+          password,
+          displayName: nama,
+        });
+
+        // Set custom claims (role)
+        await admin.auth().setCustomUserClaims(userRecord.uid, { role });
+
+        // Format tanggal (createdAt)
+        const createdAt = new Date();
+        const formatter = new Intl.DateTimeFormat('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+
+        const formattedCreatedAt = formatter.format(createdAt) + ' UTC+7';
+
+        // Simpan ke Firestore
+        await db.collection('users').doc(userRecord.uid).set({
+          nama,
+          email,
+          rt,
+          role,
+          uid: userRecord.uid,
+          createdAt: formattedCreatedAt,
+        });
+
+        // Kirim email reset password
+        await admin.auth().generatePasswordResetLink(email);
+
+        return res.status(200).json({
+          message: 'Pengguna berhasil ditambahkan dan email reset password telah dikirim.',
+        });
+
+      } catch (createErr) {
+        console.error('Gagal membuat user:', createErr);
+        return res.status(500).json({ error: 'Gagal membuat akun pengguna.' });
+      }
+
+    } else {
+      // Error selain user-not-found
+      console.error('Gagal memeriksa email:', error);
+      return res.status(500).json({ error: 'Gagal memeriksa email.' });
+    }
   }
 });
 
