@@ -54,7 +54,7 @@ router.delete('/:id', async (req, res) => {
 // POST: Tambah pengguna baru
 // ============================
 router.post('/add', async (req, res) => {
-  const { nama, email, password, rt, role } = req.body;
+  const { name, email, password, rt, role } = req.body;
 
   try {
     // 1. Cek apakah email sudah digunakan
@@ -71,7 +71,7 @@ router.post('/add', async (req, res) => {
         const userRecord = await admin.auth().createUser({
           email,
           password,
-          displayName: nama,
+          displayName: this.name,
         });
 
         // Set custom claims (role)
@@ -93,7 +93,7 @@ router.post('/add', async (req, res) => {
 
         // Simpan ke Firestore
         await db.collection('users').doc(userRecord.uid).set({
-          nama,
+          name,
           email,
           rt,
           role,
